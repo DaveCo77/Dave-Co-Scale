@@ -4,7 +4,11 @@
   <title>Dave-Co Control</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <style>
-    body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: #0b1016; height: 100vh; display: flex; user-select: none; touch-action: manipulation; }
+    body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: #0b1016; height: 100vh; user-select: none; touch-action: manipulation; }
+    
+    /* Wrap the sides in a flex container so we can hide it on error */
+    #voting-container { display: none; width: 100%; height: 100%; flex-direction: row; }
+    
     .side { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; transition: filter 0.1s; touch-action: manipulation; }
     .side:active { filter: brightness(1.2); }
     .side.left { background: radial-gradient(circle at top left, #635496, #1E3668); border-right: 2px solid #000; }
@@ -13,31 +17,52 @@
     /* The SVG Icon Box */
     .icon-display { width: 80px; height: 80px; margin-bottom: 20px; fill: rgba(255,255,255,0.8); pointer-events: none; }
 
-    h2 { margin: 0 0 20px 0; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.5); pointer-events: none; text-align: center; }
+    h2 { margin: 0 0 20px 0; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.5); pointer-events: none; text-align: center; padding: 0 10px; }
     .count { font-size: 8rem; font-weight: 800; color: white; margin: 0; line-height: 1; pointer-events: none; }
     .hit-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; cursor: pointer; }
+
+    /* Failsafe Error Screen */
+    #error-screen {
+        display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: #0b1016; z-index: 10000; color: #ff3333; flex-direction: column;
+        align-items: center; justify-content: center; text-align: center;
+    }
+    #error-screen h1 { font-size: 2rem; margin-bottom: 10px; text-shadow: 0 0 15px #ff3333; }
+    #error-screen p { font-size: 1.2rem; color: #fff; padding: 0 20px; }
   </style>
 </head>
 <body>
 
-  <div class="side left">
-    <div class="hit-area" onclick="vote('left')"></div>
-    <div class="icon-display" id="ctrlIconLeft"></div>
-    <h2>Safety, Respect & Culture</h2>
-    <div class="count" id="leftDisplay">...</div>
+  <div id="error-screen">
+    <h1>⚠️ INVALID EVENT LINK</h1>
+    <p>Please scan the QR code on the main screen again.</p>
   </div>
 
-  <div class="side right">
-    <div class="hit-area" onclick="vote('right')"></div>
-    <div class="icon-display" id="ctrlIconRight"></div>
-    <h2>Leadership, Progression & Power</h2>
-    <div class="count" id="rightDisplay">...</div>
+  <div id="voting-container">
+    <div class="side left">
+      <div class="hit-area" onclick="vote('left')"></div>
+      <div class="icon-display" id="ctrlIconLeft"></div>
+      <h2 id="labelLeft">Safety, Respect & Culture</h2>
+      <div class="count" id="leftDisplay">...</div>
+    </div>
+
+    <div class="side right">
+      <div class="hit-area" onclick="vote('right')"></div>
+      <div class="icon-display" id="ctrlIconRight"></div>
+      <h2 id="labelRight">Leadership, Progression & Power</h2>
+      <div class="count" id="rightDisplay">...</div>
+    </div>
   </div>
 
   <script type="module">
-    import { scaleRef, update, increment, onValue } from './firebase-config.js';
+    import { db, ref, update, increment, onValue } from './firebase-config.js';
 
-   const iconLibrary = {
+    // 1. URL Parameter Extraction
+    const urlParams = new URLSearchParams(window.location.search);
+    const eventId = urlParams.get('event');
+    let eventRef = null;
+
+    const iconLibrary = {
       none: '',
       brick: `<svg viewBox="0 0 100 60"><rect x="5" y="5" width="90" height="50" rx="4"/><line x1="5" y1="30" x2="95" y2="30" stroke="#1E3668" stroke-width="4"/><line x1="50" y1="5" x2="50" y2="30" stroke="#1E3668" stroke-width="4"/><line x1="25" y1="30" x2="25" y2="55" stroke="#1E3668" stroke-width="4"/><line x1="75" y1="30" x2="75" y2="55" stroke="#1E3668" stroke-width="4"/></svg>`,
       house: `<svg viewBox="0 0 100 100"><path d="M 50 15 L 15 50 L 25 50 L 25 90 L 75 90 L 75 50 L 85 50 Z"/><rect x="40" y="60" width="20" height="30" fill="#1E3668"/></svg>`,
@@ -46,20 +71,36 @@
       crane: `<svg viewBox="0 0 100 100"><rect x="20" y="10" width="12" height="90"/><polygon points="10,10 90,10 80,25 32,25"/><line x1="75" y1="25" x2="75" y2="60" stroke="rgba(255,255,255,0.8)" stroke-width="3"/><path d="M75 60 v10 a 8 8 0 0 0 16 0" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="4"/></svg>`
     };
 
-    onValue(scaleRef, (snapshot) => {
-      const data = snapshot.val() || {};
-      document.getElementById("leftDisplay").textContent = data.left || 0;
-      document.getElementById("rightDisplay").textContent = data.right || 0;
-      
-      const config = data.config || {};
-      document.getElementById('ctrlIconLeft').innerHTML = iconLibrary[config.iconLeft || 'none'];
-      document.getElementById('ctrlIconRight').innerHTML = iconLibrary[config.iconRight || 'none'];
-    });
+    // 2. Failsafe Routing
+    if (!eventId) {
+      document.getElementById('error-screen').style.display = 'flex';
+    } else {
+      document.getElementById('voting-container').style.display = 'flex';
+      eventRef = ref(db, 'votes/' + eventId);
 
+      onValue(eventRef, (snapshot) => {
+        const data = snapshot.val() || {};
+        document.getElementById("leftDisplay").textContent = data.left || 0;
+        document.getElementById("rightDisplay").textContent = data.right || 0;
+        
+        const config = data.config || {};
+        
+        // Sync Icons
+        document.getElementById('ctrlIconLeft').innerHTML = iconLibrary[config.iconLeft || 'none'];
+        document.getElementById('ctrlIconRight').innerHTML = iconLibrary[config.iconRight || 'none'];
+
+        // Sync Dynamic Text Labels
+        document.getElementById('labelLeft').textContent = config.labelLeft || 'Safety, Respect & Culture';
+        document.getElementById('labelRight').textContent = config.labelRight || 'Leadership, Progression & Power';
+      });
+    }
+
+    // 3. Cast Vote (Rapid Fire)
     window.vote = function(side) {
+      if (!eventRef) return;
       const updates = {};
       updates[side] = increment(1);
-      update(scaleRef, updates);
+      update(eventRef, updates);
     };
   </script>
 </body>
