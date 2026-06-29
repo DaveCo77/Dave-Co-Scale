@@ -6,11 +6,10 @@
     :root {
       --scale-color: #8b55d6; 
       --scale-dark: #5e309c;
+      /* Dynamic Colors injected by JS */
+      --color-left: #635496;
+      --color-right: #F09222;
       --wisteria-1: #e6ddf8;
-      --wisteria-2: #80a2df;
-      --wisteria-3: #635496;
-      --wisteria-4: #4e317a;
-      --wisteria-5: #171e60;
       --bg-dark: #120e2b;
       --bg-light: #2b2257;
     }
@@ -21,63 +20,29 @@
     .petal { position: absolute; top: -10%; border-radius: 50% 0 50% 50%; opacity: 0.6; box-shadow: 0 0 10px rgba(230, 221, 248, 0.2); }
     @keyframes fall { 0% { top: -10%; } 100% { top: 110%; } }
     @keyframes drift { 0% { transform: translateX(0) rotate(0deg); } 100% { transform: translateX(80px) rotate(180deg); } }
-
     .spark { position: absolute; width: 8px; height: 8px; border-radius: 50%; pointer-events: none; z-index: 50; box-shadow: 0 0 10px currentColor; }
 
-    .scale-wrapper { 
-      position: absolute; 
-      bottom: 5vh; 
-      left: 50%; 
-      transform-origin: bottom center; 
-      transform: translateX(-50%) scale(1);
-      width: 600px; height: 600px; z-index: 10; 
-      transition: transform 0.3s ease-out; 
-    }
-    
+    .scale-wrapper { position: absolute; bottom: 5vh; left: 50%; transform-origin: bottom center; transform: translateX(-50%) scale(1); width: 600px; height: 600px; z-index: 10; transition: transform 0.3s ease-out; }
     .stand { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 200px; height: 350px; }
     .stand svg { width: 100%; height: 100%; overflow: visible; }
-
     #beamGroup { position: absolute; bottom: 335px; left: 50%; width: 0; height: 0; transition: transform 1.5s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 5; }
     .beam-svg-container { position: absolute; top: -50px; left: -300px; width: 600px; height: 100px; }
-
     .pan-assembly { position: absolute; top: 0; width: 0; height: 0; transition: transform 1.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
     .pan-assembly.left { left: -260px; } 
     .pan-assembly.right { left: 260px; }
-    
     .pan-svg-container { position: absolute; top: 0; left: -100px; width: 200px; height: 250px; z-index: 5; }
 
-    .content-box { 
-      position: absolute; top: 0px; left: -100px; width: 200px; height: 250px; 
-      display: flex; flex-direction: column; align-items: center; justify-content: flex-end; z-index: 10; 
-      padding-bottom: 30px; box-sizing: border-box;
-    }
-    
-    .item-icon { 
-      position: absolute; width: 150px; height: 150px; top: 110px; left: 0; 
-      transform: translate(-50%, -50%); opacity: 0.15; pointer-events: none; z-index: 0; 
-    }
-
+    .content-box { position: absolute; top: 0px; left: -100px; width: 200px; height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; z-index: 10; padding-bottom: 30px; box-sizing: border-box; }
+    .item-icon { position: absolute; width: 150px; height: 150px; top: 110px; left: 0; transform: translate(-50%, -50%); opacity: 0.15; pointer-events: none; z-index: 0; }
     .score { position: relative; font-size: 3.5rem; font-weight: bold; line-height: 1; color: white; text-shadow: 0 4px 10px rgba(0,0,0,0.8); }
     .label { position: relative; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: white; font-weight: bold; text-align: center; line-height: 1.2; margin-top: 5px; text-shadow: 0 3px 6px rgba(0,0,0,0.9); }
 
-    .pixel-watermark {
-        position: fixed; bottom: 30px; right: 40px; z-index: 9999; 
-        pointer-events: none; display: none; align-items: center;
-        justify-content: center; user-select: none; opacity: 0.85; 
-    }
+    .pixel-watermark { position: fixed; bottom: 30px; right: 40px; z-index: 9999; pointer-events: none; display: none; align-items: center; justify-content: center; user-select: none; opacity: 0.85; }
     .pixel-watermark.show-watermark { display: flex; }
-    .pixel-watermark-text {
-        font-family: 'Segoe UI', sans-serif; font-size: 2.5rem; font-weight: 400;
-        color: rgba(255, 255, 255, 0.7); letter-spacing: 0.05em;
-        text-transform: uppercase; text-shadow: 0px 4px 15px rgba(0,0,0,0.9);
-    }
+    .pixel-watermark-text { font-family: 'Segoe UI', sans-serif; font-size: 2.5rem; font-weight: 400; color: rgba(255, 255, 255, 0.7); letter-spacing: 0.05em; text-transform: uppercase; text-shadow: 0px 4px 15px rgba(0,0,0,0.9); }
     .pixel-watermark-text strong { font-weight: 800; color: #d97a39; }
 
-    #error-screen {
-        display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: #000; z-index: 10000; color: #ff3333; flex-direction: column;
-        align-items: center; justify-content: center; font-family: monospace; text-align: center;
-    }
+    #error-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 10000; color: #ff3333; flex-direction: column; align-items: center; justify-content: center; font-family: monospace; text-align: center; }
     #error-screen h1 { font-size: 3rem; margin-bottom: 10px; text-shadow: 0 0 20px #ff3333; }
     #error-screen p { font-size: 1.5rem; color: #fff; }
   </style>
@@ -118,10 +83,10 @@
         <div class="item-icon" id="iconLeft"></div>
         <div class="pan-svg-container">
           <svg viewBox="0 0 200 250">
-            <line x1="100" y1="0" x2="30" y2="180" stroke="var(--scale-color)" stroke-width="3"/>
-            <line x1="100" y1="0" x2="100" y2="180" stroke="var(--scale-color)" stroke-width="3"/>
-            <line x1="100" y1="0" x2="170" y2="180" stroke="var(--scale-color)" stroke-width="3"/>
-            <path d="M 10 180 Q 100 240 190 180 Z" fill="var(--scale-color)"/>
+            <line x1="100" y1="0" x2="30" y2="180" stroke="var(--color-left)" stroke-width="3"/>
+            <line x1="100" y1="0" x2="100" y2="180" stroke="var(--color-left)" stroke-width="3"/>
+            <line x1="100" y1="0" x2="170" y2="180" stroke="var(--color-left)" stroke-width="3"/>
+            <path d="M 10 180 Q 100 240 190 180 Z" fill="var(--color-left)"/>
             <path d="M 10 180 Q 100 195 190 180 Q 100 165 10 180 Z" fill="var(--scale-dark)"/> 
           </svg>
         </div>
@@ -135,10 +100,10 @@
         <div class="item-icon" id="iconRight"></div>
         <div class="pan-svg-container">
           <svg viewBox="0 0 200 250">
-            <line x1="100" y1="0" x2="30" y2="180" stroke="var(--scale-color)" stroke-width="3"/>
-            <line x1="100" y1="0" x2="100" y2="180" stroke="var(--scale-color)" stroke-width="3"/>
-            <line x1="100" y1="0" x2="170" y2="180" stroke="var(--scale-color)" stroke-width="3"/>
-            <path d="M 10 180 Q 100 240 190 180 Z" fill="var(--scale-color)"/>
+            <line x1="100" y1="0" x2="30" y2="180" stroke="var(--color-right)" stroke-width="3"/>
+            <line x1="100" y1="0" x2="100" y2="180" stroke="var(--color-right)" stroke-width="3"/>
+            <line x1="100" y1="0" x2="170" y2="180" stroke="var(--color-right)" stroke-width="3"/>
+            <path d="M 10 180 Q 100 240 190 180 Z" fill="var(--color-right)"/>
             <path d="M 10 180 Q 100 195 190 180 Q 100 165 10 180 Z" fill="var(--scale-dark)"/>
           </svg>
         </div>
@@ -164,6 +129,7 @@
     const scoreRight = document.getElementById('scoreRight');
     const masterWrapper = document.getElementById('masterScaleWrapper');
     const watermark = document.getElementById('freemium-watermark');
+    const rootStyles = document.documentElement.style;
     
     const iconLibrary = {
       none: '',
@@ -174,7 +140,7 @@
       crane: `<svg viewBox="0 0 100 100"><rect x="20" y="10" width="12" height="90" fill="var(--wisteria-1)"/><polygon points="10,10 90,10 80,25 32,25" fill="var(--wisteria-1)"/><line x1="75" y1="25" x2="75" y2="60" stroke="var(--wisteria-1)" stroke-width="3"/><path d="M75 60 v10 a 8 8 0 0 0 16 0" fill="none" stroke="var(--wisteria-1)" stroke-width="4"/></svg>`
     };
 
-    let currentConfig = { sensitivity: 5, maxTilt: 25, petalSpawn: 1200, petalFall: 15, iconLeft: 'none', iconRight: 'none', iconOpacity: 15, scaleZoom: 100, fireworks: 0 };
+    let currentConfig = { sensitivity: 5, maxTilt: 25, petalSpawn: 1200, petalFall: 15, iconOpacity: 15, scaleZoom: 100, fireworks: 0 };
     let localFireworksState = 0;
 
     if (!eventId) {
@@ -198,6 +164,10 @@
             if (localFireworksState !== 0) { fireworkShow(); }
             localFireworksState = currentConfig.fireworks;
           }
+          
+          // INJECT DYNAMIC COLORS
+          rootStyles.setProperty('--color-left', currentConfig.colorLeft || '#635496');
+          rootStyles.setProperty('--color-right', currentConfig.colorRight || '#F09222');
         }
         
         document.getElementById('iconLeft').innerHTML = iconLibrary[currentConfig.iconLeft || 'none'];
@@ -212,7 +182,6 @@
           masterWrapper.style.transform = `translateX(-50%) scale(${zoomVal})`;
         }
         
-        // --- DYNAMIC TEXT UPDATE ---
         document.getElementById('labelLeft').textContent = currentConfig.labelLeft || 'Safety, Respect & Culture';
         document.getElementById('labelRight').textContent = currentConfig.labelRight || 'Leadership, Progression & Power';
 
@@ -282,7 +251,6 @@
 
     function createPetal() {
       if (!eventId) return; 
-
       const petal = document.createElement('div');
       petal.classList.add('petal');
       petal.style.left = Math.random() * 100 + 'vw';
