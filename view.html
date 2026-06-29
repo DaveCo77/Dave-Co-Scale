@@ -24,7 +24,6 @@
 
     .spark { position: absolute; width: 8px; height: 8px; border-radius: 50%; pointer-events: none; z-index: 50; box-shadow: 0 0 10px currentColor; }
 
-    /* FIXED: Anchored to the bottom so it grows UPWARDS when zoomed */
     .scale-wrapper { 
       position: absolute; 
       bottom: 5vh; 
@@ -45,7 +44,6 @@
     .pan-assembly.left { left: -260px; } 
     .pan-assembly.right { left: 260px; }
     
-    /* Z-Index logic updated to sandwich the watermarks */
     .pan-svg-container { position: absolute; top: 0; left: -100px; width: 200px; height: 250px; z-index: 5; }
 
     .content-box { 
@@ -54,7 +52,6 @@
       padding-bottom: 30px; box-sizing: border-box;
     }
     
-    /* Removed from content-box, now locked to the background */
     .item-icon { 
       position: absolute; 
       width: 150px; 
@@ -69,9 +66,59 @@
 
     .score { position: relative; font-size: 3.5rem; font-weight: bold; line-height: 1; color: white; text-shadow: 0 4px 10px rgba(0,0,0,0.8); }
     .label { position: relative; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: white; font-weight: bold; text-align: center; line-height: 1.2; margin-top: 5px; text-shadow: 0 3px 6px rgba(0,0,0,0.9); }
+
+    /* =========================================
+       FREEMIUM BADGE ("Powered By")
+       ========================================= */
+    .pixel-watermark {
+        position: fixed;
+        bottom: 30px; 
+        right: 40px; 
+        z-index: 9999; 
+        pointer-events: none; 
+        display: none; 
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+        opacity: 0.85; 
+    }
+    .pixel-watermark.show-watermark { display: flex; }
+    .pixel-watermark-text {
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 2.5rem; 
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.7); 
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        text-shadow: 0px 4px 15px rgba(0,0,0,0.9);
+    }
+    .pixel-watermark-text strong {
+        font-weight: 800;
+        color: #d97a39; 
+    }
+
+    /* =========================================
+       FAILSAFE BLACKOUT SCREEN
+       ========================================= */
+    #error-screen {
+        display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: #000; z-index: 10000; color: #ff3333; flex-direction: column;
+        align-items: center; justify-content: center; font-family: monospace; text-align: center;
+    }
+    #error-screen h1 { font-size: 3rem; margin-bottom: 10px; text-shadow: 0 0 20px #ff3333; }
+    #error-screen p { font-size: 1.5rem; color: #fff; }
   </style>
 </head>
 <body>
+
+  <div id="error-screen">
+    <h1>⚠️ OFFLINE: EVENT LINK MISSING</h1>
+    <p>Please load this display using a valid event URL:<br><br><strong>view.html?event=YOUR_EVENT_ID</strong></p>
+  </div>
+
+  <div id="freemium-watermark" class="pixel-watermark">
+      <div class="pixel-watermark-text">Powered by <strong>Pixel Array</strong></div>
+  </div>
 
   <div id="petal-container"></div>
 
@@ -131,14 +178,22 @@
   </div>
 
   <script type="module">
-    import { scaleRef, onValue } from './firebase-config.js';
+    // IMPORTANT: Make sure 'db' and 'ref' are exported from your firebase-config.js file
+    import { db, ref, onValue } from './firebase-config.js';
 
+    // 1. URL Parameter Extraction
+    const urlParams = new URLSearchParams(window.location.search);
+    const eventId = urlParams.get('event');
+    const errorScreen = document.getElementById('error-screen');
+
+    // 2. Element References
     const beam = document.getElementById('beamGroup');
     const panLeft = document.getElementById('panLeft');
     const panRight = document.getElementById('panRight');
     const scoreLeft = document.getElementById('scoreLeft');
     const scoreRight = document.getElementById('scoreRight');
     const masterWrapper = document.getElementById('masterScaleWrapper');
+    const watermark = document.getElementById('freemium-watermark');
     
     const iconLibrary = {
       none: '',
@@ -152,32 +207,47 @@
     let currentConfig = { sensitivity: 5, maxTilt: 25, petalSpawn: 1200, petalFall: 15, iconLeft: 'none', iconRight: 'none', iconOpacity: 15, scaleZoom: 100, fireworks: 0 };
     let localFireworksState = 0;
 
-    onValue(scaleRef, (snapshot) => {
-      const data = snapshot.val() || {};
-      if (data.config) {
-        currentConfig = data.config;
+    // 3. Failsafe or Connect
+    if (!eventId) {
+      errorScreen.style.display = 'flex';
+      // Stop execution so it just sits cleanly on the error screen
+    } else {
+      const eventRef = ref(db, 'votes/' + eventId);
+
+      onValue(eventRef, (snapshot) => {
+        const data = snapshot.val() || {};
         
-        if (currentConfig.fireworks && currentConfig.fireworks > localFireworksState) {
-          if (localFireworksState !== 0) { fireworkShow(); }
-          localFireworksState = currentConfig.fireworks;
+        // --- WATERMARK TOGGLE ---
+        if (data.status === 'free') {
+          watermark.classList.add('show-watermark');
+        } else {
+          watermark.classList.remove('show-watermark');
         }
-      }
-      
-      document.getElementById('iconLeft').innerHTML = iconLibrary[currentConfig.iconLeft || 'none'];
-      document.getElementById('iconRight').innerHTML = iconLibrary[currentConfig.iconRight || 'none'];
 
-      const opacityVal = (currentConfig.iconOpacity ?? 15) / 100;
-      document.getElementById('iconLeft').style.opacity = opacityVal;
-      document.getElementById('iconRight').style.opacity = opacityVal;
+        if (data.config) {
+          currentConfig = data.config;
+          
+          if (currentConfig.fireworks && currentConfig.fireworks > localFireworksState) {
+            if (localFireworksState !== 0) { fireworkShow(); }
+            localFireworksState = currentConfig.fireworks;
+          }
+        }
+        
+        document.getElementById('iconLeft').innerHTML = iconLibrary[currentConfig.iconLeft || 'none'];
+        document.getElementById('iconRight').innerHTML = iconLibrary[currentConfig.iconRight || 'none'];
 
-      // FIXED ZOOM TRANSLATION: Only adjust X axis, allow it to grow upwards from the bottom origin
-      const zoomVal = (currentConfig.scaleZoom ?? 100) / 100;
-      if (masterWrapper) {
-        masterWrapper.style.transform = `translateX(-50%) scale(${zoomVal})`;
-      }
+        const opacityVal = (currentConfig.iconOpacity ?? 15) / 100;
+        document.getElementById('iconLeft').style.opacity = opacityVal;
+        document.getElementById('iconRight').style.opacity = opacityVal;
 
-      updateView(data);
-    });
+        const zoomVal = (currentConfig.scaleZoom ?? 100) / 100;
+        if (masterWrapper) {
+          masterWrapper.style.transform = `translateX(-50%) scale(${zoomVal})`;
+        }
+
+        updateView(data);
+      });
+    }
 
     function updateView(state) {
       const left = state.left || 0; const right = state.right || 0;
@@ -193,6 +263,7 @@
       if(panRight) panRight.style.transform = `rotate(${-angle}deg)`;
     }
 
+    // 4. Background FX Logic
     function fireworkShow() {
       const fContainer = document.createElement('div');
       fContainer.style.position = 'absolute'; fContainer.style.top = '0'; fContainer.style.left = '0';
@@ -240,6 +311,9 @@
     let petalTimer;
 
     function createPetal() {
+      // Don't spawn petals if sitting on the error screen
+      if (!eventId) return; 
+
       const petal = document.createElement('div');
       petal.classList.add('petal');
       petal.style.left = Math.random() * 100 + 'vw';
@@ -260,8 +334,11 @@
       petalTimer = setTimeout(loopPetals, currentConfig.petalSpawn || 1200);
     }
 
-    loopPetals();
-    for(let i=0; i<15; i++) { setTimeout(createPetal, Math.random() * 5000); }
+    // Only start ambient animations if a valid event is loaded
+    if (eventId) {
+      loopPetals();
+      for(let i=0; i<15; i++) { setTimeout(createPetal, Math.random() * 5000); }
+    }
   </script>
 </body>
 </html>
