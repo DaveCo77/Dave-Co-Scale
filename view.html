@@ -53,53 +53,26 @@
     }
     
     .item-icon { 
-      position: absolute; 
-      width: 150px; 
-      height: 150px; 
-      top: 110px; 
-      left: 0; 
-      transform: translate(-50%, -50%); 
-      opacity: 0.15; 
-      pointer-events: none; 
-      z-index: 0; 
+      position: absolute; width: 150px; height: 150px; top: 110px; left: 0; 
+      transform: translate(-50%, -50%); opacity: 0.15; pointer-events: none; z-index: 0; 
     }
 
     .score { position: relative; font-size: 3.5rem; font-weight: bold; line-height: 1; color: white; text-shadow: 0 4px 10px rgba(0,0,0,0.8); }
     .label { position: relative; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: white; font-weight: bold; text-align: center; line-height: 1.2; margin-top: 5px; text-shadow: 0 3px 6px rgba(0,0,0,0.9); }
 
-    /* =========================================
-       FREEMIUM BADGE ("Powered By")
-       ========================================= */
     .pixel-watermark {
-        position: fixed;
-        bottom: 30px; 
-        right: 40px; 
-        z-index: 9999; 
-        pointer-events: none; 
-        display: none; 
-        align-items: center;
-        justify-content: center;
-        user-select: none;
-        opacity: 0.85; 
+        position: fixed; bottom: 30px; right: 40px; z-index: 9999; 
+        pointer-events: none; display: none; align-items: center;
+        justify-content: center; user-select: none; opacity: 0.85; 
     }
     .pixel-watermark.show-watermark { display: flex; }
     .pixel-watermark-text {
-        font-family: 'Segoe UI', sans-serif;
-        font-size: 2.5rem; 
-        font-weight: 400;
-        color: rgba(255, 255, 255, 0.7); 
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        text-shadow: 0px 4px 15px rgba(0,0,0,0.9);
+        font-family: 'Segoe UI', sans-serif; font-size: 2.5rem; font-weight: 400;
+        color: rgba(255, 255, 255, 0.7); letter-spacing: 0.05em;
+        text-transform: uppercase; text-shadow: 0px 4px 15px rgba(0,0,0,0.9);
     }
-    .pixel-watermark-text strong {
-        font-weight: 800;
-        color: #d97a39; 
-    }
+    .pixel-watermark-text strong { font-weight: 800; color: #d97a39; }
 
-    /* =========================================
-       FAILSAFE BLACKOUT SCREEN
-       ========================================= */
     #error-screen {
         display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         background: #000; z-index: 10000; color: #ff3333; flex-direction: column;
@@ -154,7 +127,7 @@
         </div>
         <div class="content-box">
           <div class="score" id="scoreLeft">0</div>
-          <div class="label">Safety, Respect<br>& Culture</div>
+          <div class="label" id="labelLeft">Safety, Respect & Culture</div>
         </div>
       </div>
 
@@ -171,22 +144,19 @@
         </div>
         <div class="content-box">
           <div class="score" id="scoreRight">0</div>
-          <div class="label">Leadership, Progression<br>& Power</div>
+          <div class="label" id="labelRight">Leadership, Progression & Power</div>
         </div>
       </div>
     </div>
   </div>
 
   <script type="module">
-    // IMPORTANT: Make sure 'db' and 'ref' are exported from your firebase-config.js file
     import { db, ref, onValue } from './firebase-config.js';
 
-    // 1. URL Parameter Extraction
     const urlParams = new URLSearchParams(window.location.search);
     const eventId = urlParams.get('event');
     const errorScreen = document.getElementById('error-screen');
 
-    // 2. Element References
     const beam = document.getElementById('beamGroup');
     const panLeft = document.getElementById('panLeft');
     const panRight = document.getElementById('panRight');
@@ -207,17 +177,14 @@
     let currentConfig = { sensitivity: 5, maxTilt: 25, petalSpawn: 1200, petalFall: 15, iconLeft: 'none', iconRight: 'none', iconOpacity: 15, scaleZoom: 100, fireworks: 0 };
     let localFireworksState = 0;
 
-    // 3. Failsafe or Connect
     if (!eventId) {
       errorScreen.style.display = 'flex';
-      // Stop execution so it just sits cleanly on the error screen
     } else {
       const eventRef = ref(db, 'votes/' + eventId);
 
       onValue(eventRef, (snapshot) => {
         const data = snapshot.val() || {};
         
-        // --- WATERMARK TOGGLE ---
         if (data.status === 'free') {
           watermark.classList.add('show-watermark');
         } else {
@@ -244,6 +211,10 @@
         if (masterWrapper) {
           masterWrapper.style.transform = `translateX(-50%) scale(${zoomVal})`;
         }
+        
+        // --- DYNAMIC TEXT UPDATE ---
+        document.getElementById('labelLeft').textContent = currentConfig.labelLeft || 'Safety, Respect & Culture';
+        document.getElementById('labelRight').textContent = currentConfig.labelRight || 'Leadership, Progression & Power';
 
         updateView(data);
       });
@@ -263,7 +234,6 @@
       if(panRight) panRight.style.transform = `rotate(${-angle}deg)`;
     }
 
-    // 4. Background FX Logic
     function fireworkShow() {
       const fContainer = document.createElement('div');
       fContainer.style.position = 'absolute'; fContainer.style.top = '0'; fContainer.style.left = '0';
@@ -311,7 +281,6 @@
     let petalTimer;
 
     function createPetal() {
-      // Don't spawn petals if sitting on the error screen
       if (!eventId) return; 
 
       const petal = document.createElement('div');
@@ -334,7 +303,6 @@
       petalTimer = setTimeout(loopPetals, currentConfig.petalSpawn || 1200);
     }
 
-    // Only start ambient animations if a valid event is loaded
     if (eventId) {
       loopPetals();
       for(let i=0; i<15; i++) { setTimeout(createPetal, Math.random() * 5000); }
