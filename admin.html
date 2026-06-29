@@ -6,15 +6,9 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
     
-    :root {
-      --term-color: #8b55d6; 
-      --term-glow: rgba(139, 85, 214, 0.5);
-      --term-bg: #000;
-      --system-ok: #00ff41;
-    }
-
+    :root { --term-color: #8b55d6; --term-glow: rgba(139, 85, 214, 0.5); --term-bg: #000; --system-ok: #00ff41; }
     body { background-color: var(--term-bg); color: var(--term-color); font-family: 'VT323', monospace; margin: 0; padding: 20px; height: 100vh; overflow-y: auto; text-transform: uppercase; }
-    body::before { content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none; }
+    body::before { content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 2; pointer-events: none; }
     
     h1 { border-bottom: 2px solid var(--term-color); padding-bottom: 10px; text-shadow: 0 0 10px var(--term-color); font-size: 2.5rem; margin-top: 0; }
     .panel-box { border: 2px solid var(--term-color); padding: 15px; margin-bottom: 20px; box-shadow: 0 0 15px var(--term-glow); background: rgba(20, 10, 30, 0.8); position: relative; z-index: 10;}
@@ -26,8 +20,9 @@
 
     label { display: block; font-size: 1.5rem; margin-bottom: 10px; }
     input[type=range] { width: 100%; accent-color: var(--term-color); height: 20px; background: #111; border: 1px solid var(--term-color); }
-    input[type=number], select, input[type=text] { background: #000; color: var(--term-color); border: 2px solid var(--term-color); font-family: 'VT323', monospace; font-size: 1.5rem; padding: 5px; width: 100%; text-align: center; margin-bottom: 10px; outline: none; box-shadow: 0 0 5px var(--term-glow); box-sizing: border-box; }
+    input[type=number], select, input[type=text], input[type=color] { background: #000; color: var(--term-color); border: 2px solid var(--term-color); font-family: 'VT323', monospace; font-size: 1.5rem; padding: 5px; width: 100%; text-align: center; margin-bottom: 10px; outline: none; box-shadow: 0 0 5px var(--term-glow); box-sizing: border-box; }
     input[type=number] { width: 80px; }
+    input[type=color] { height: 50px; cursor: pointer; padding: 2px; }
     
     .value-readout { float: right; }
     .btn-group { display: flex; gap: 10px; margin-top: 10px; }
@@ -47,7 +42,6 @@
     .btn-unlock:hover { background: #fff; border-color: #fff; box-shadow: 0 0 25px #fff; }
     
     .input-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
-    
     #main-controls { display: none; opacity: 0; transition: opacity 0.5s ease-in-out; }
     #main-controls.active { display: block; opacity: 1; }
   </style>
@@ -75,11 +69,6 @@
     <div class="panel-box">
       <h2>> SPECIAL EVENT FX</h2>
       <button class="btn-fireworks" onclick="launchFireworks()">LAUNCH FIREWORKS</button>
-    </div>
-
-    <div class="panel-box">
-      <h2>> CROWD CONTROL</h2>
-      <button class="btn-unlock" onclick="unlockVoting()">UNLOCK AUDIENCE PHONES</button>
     </div>
 
     <div class="panel-box">
@@ -126,7 +115,18 @@
       <h2>> VISUAL REFERENCES</h2>
       <div class="input-row">
         <div style="flex:1; padding-right:10px;">
-          <label>LEFT DISH:</label>
+          <label>LEFT BRAND COLOR:</label>
+          <input type="color" id="in_colorLeft" value="#635496" oninput="updateConfig()">
+        </div>
+        <div style="flex:1;">
+          <label>RIGHT BRAND COLOR:</label>
+          <input type="color" id="in_colorRight" value="#F09222" oninput="updateConfig()">
+        </div>
+      </div>
+
+      <div class="input-row" style="margin-top: 20px;">
+        <div style="flex:1; padding-right:10px;">
+          <label>LEFT DISH ICON:</label>
           <select id="sel_iconLeft" onchange="updateConfig()">
             <option value="none">None</option>
             <option value="brick">Brick</option>
@@ -137,7 +137,7 @@
           </select>
         </div>
         <div style="flex:1;">
-          <label>RIGHT DISH:</label>
+          <label>RIGHT DISH ICON:</label>
           <select id="sel_iconRight" onchange="updateConfig()">
             <option value="none">None</option>
             <option value="brick">Brick</option>
@@ -168,18 +168,6 @@
       <div>
         <label>MAX TILT ANGLE <span id="disp_tilt" class="value-readout">25</span></label>
         <input type="range" min="5" max="45" id="in_tilt" oninput="updateConfig()">
-      </div>
-    </div>
-
-    <div class="panel-box">
-      <h2>> BACKGROUND PETALS</h2>
-      <div style="margin-bottom: 20px;">
-        <label>SPAWN RATE (ms) <span id="disp_spawn" class="value-readout">1200</span></label>
-        <input type="range" min="200" max="4000" step="100" id="in_spawn" oninput="updateConfig()">
-      </div>
-      <div>
-        <label>GRAVITY SPEED <span id="disp_fall" class="value-readout">15</span></label>
-        <input type="range" min="5" max="40" id="in_fall" oninput="updateConfig()">
       </div>
     </div>
 
@@ -223,16 +211,12 @@
         lastActive = now;
 
         const data = snapshot.val() || {};
-        const config = data.config || { sensitivity: 5, maxTilt: 25, petalSpawn: 1200, petalFall: 15, iconLeft: 'none', iconRight: 'none', iconOpacity: 15, scaleZoom: 100 };
+        const config = data.config || { sensitivity: 5, maxTilt: 25, iconOpacity: 15, scaleZoom: 100 };
 
         document.getElementById('in_sens').value = config.sensitivity || 5;
         document.getElementById('disp_sens').innerText = config.sensitivity || 5;
         document.getElementById('in_tilt').value = config.maxTilt || 25;
         document.getElementById('disp_tilt').innerText = config.maxTilt || 25;
-        document.getElementById('in_spawn').value = config.petalSpawn || 1200;
-        document.getElementById('disp_spawn').innerText = config.petalSpawn || 1200;
-        document.getElementById('in_fall').value = config.petalFall || 15;
-        document.getElementById('disp_fall').innerText = config.petalFall || 15;
         
         document.getElementById('in_opacity').value = config.iconOpacity ?? 15;
         document.getElementById('disp_opacity').innerText = (config.iconOpacity ?? 15) + '%';
@@ -242,7 +226,14 @@
         document.getElementById('sel_iconLeft').value = config.iconLeft || 'none';
         document.getElementById('sel_iconRight').value = config.iconRight || 'none';
 
-        // Bind the new text inputs
+        // Load colors (preventing overwrite if you are currently typing/selecting)
+        if (document.activeElement !== document.getElementById('in_colorLeft')) {
+            document.getElementById('in_colorLeft').value = config.colorLeft || '#635496';
+        }
+        if (document.activeElement !== document.getElementById('in_colorRight')) {
+            document.getElementById('in_colorRight').value = config.colorRight || '#F09222';
+        }
+
         if (document.activeElement !== document.getElementById('in_labelLeft')) {
             document.getElementById('in_labelLeft').value = config.labelLeft || '';
         }
@@ -260,15 +251,14 @@
       update(eventRef, {
         "config/sensitivity": parseInt(document.getElementById('in_sens').value),
         "config/maxTilt": parseInt(document.getElementById('in_tilt').value),
-        "config/petalSpawn": parseInt(document.getElementById('in_spawn').value),
-        "config/petalFall": parseInt(document.getElementById('in_fall').value),
         "config/iconLeft": document.getElementById('sel_iconLeft').value,
         "config/iconRight": document.getElementById('sel_iconRight').value,
         "config/iconOpacity": parseInt(document.getElementById('in_opacity').value),
         "config/scaleZoom": parseInt(document.getElementById('in_zoom').value),
-        // Push the new custom labels to the cloud
         "config/labelLeft": document.getElementById('in_labelLeft').value,
-        "config/labelRight": document.getElementById('in_labelRight').value
+        "config/labelRight": document.getElementById('in_labelRight').value,
+        "config/colorLeft": document.getElementById('in_colorLeft').value,
+        "config/colorRight": document.getElementById('in_colorRight').value
       });
     }
 
@@ -284,15 +274,12 @@
     }
 
     window.launchFireworks = function() { if(!eventRef) return; update(eventRef, { "config/fireworks": Date.now() }); }
-    window.unlockVoting = function() { if(!eventRef) return; update(eventRef, { "config/votingRound": Date.now() }); }
 
+    // FIXED NUKE BUTTON: Only resets scores to 0, preserves your status and design config
     window.nukeIt = function() {
       if(!eventRef) return;
-      if(confirm("CONFIRM SYSTEM WIPE? THIS WILL DELETE ALL SCORES FOR EVENT: " + currentEventId)) {
-        set(eventRef, { 
-          left: 0, right: 0,
-          config: { sensitivity: 5, maxTilt: 25, petalSpawn: 1200, petalFall: 15, iconLeft: 'none', iconRight: 'none', iconOpacity: 15, scaleZoom: 100, fireworks: 0, votingRound: Date.now(), labelLeft: '', labelRight: '' }
-        });
+      if(confirm("CONFIRM SYSTEM WIPE? THIS WILL RESET SCORES TO ZERO FOR EVENT: " + currentEventId)) {
+        update(eventRef, { left: 0, right: 0 });
       }
     }
   </script>
