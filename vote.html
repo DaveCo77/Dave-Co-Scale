@@ -38,8 +38,8 @@
   </div>
 
   <script type="module">
-    // IMPORTANT: Make sure 'ref' is exported from your firebase-config.js file
-    import { db, ref, update, increment } from './firebase-config.js';
+    // IMPORTANT: Make sure this imports correctly from your firebase-config.js
+    import { db, ref, update, increment, onValue } from './firebase-config.js';
 
     // 1. Extract Event ID from URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -53,9 +53,18 @@
     } else {
       document.getElementById('voting-container').style.display = 'block';
       eventRef = ref(db, 'votes/' + eventId);
+
+      // 3. NEW: Listen for Custom Labels from the Admin Panel
+      onValue(eventRef, (snapshot) => {
+        const data = snapshot.val() || {};
+        if (data.config) {
+          document.getElementById('btnLeft').textContent = data.config.labelLeft || 'Vote Option 1';
+          document.getElementById('btnRight').textContent = data.config.labelRight || 'Vote Option 2';
+        }
+      });
     }
 
-    // 3. Cast Vote Logic
+    // 4. Cast Vote Logic
     window.castVote = function(side) {
       if (!eventRef) return; // Hard failsafe against broken links
 
