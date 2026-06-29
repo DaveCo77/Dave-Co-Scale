@@ -26,7 +26,7 @@
 
     label { display: block; font-size: 1.5rem; margin-bottom: 10px; }
     input[type=range] { width: 100%; accent-color: var(--term-color); height: 20px; background: #111; border: 1px solid var(--term-color); }
-    input[type=number], select { background: #000; color: var(--term-color); border: 2px solid var(--term-color); font-family: 'VT323', monospace; font-size: 1.5rem; padding: 5px; width: 100%; text-align: center; margin-bottom: 10px; outline: none; box-shadow: 0 0 5px var(--term-glow); }
+    input[type=number], select, input[type=text] { background: #000; color: var(--term-color); border: 2px solid var(--term-color); font-family: 'VT323', monospace; font-size: 1.5rem; padding: 5px; width: 100%; text-align: center; margin-bottom: 10px; outline: none; box-shadow: 0 0 5px var(--term-glow); box-sizing: border-box; }
     input[type=number] { width: 80px; }
     
     .value-readout { float: right; }
@@ -48,160 +48,209 @@
     .btn-unlock:hover { background: #fff; border-color: #fff; box-shadow: 0 0 25px #fff; }
     
     .input-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+    
+    /* Disables the main controls until a session is linked */
+    #main-controls { display: none; opacity: 0; transition: opacity 0.5s ease-in-out; }
+    #main-controls.active { display: block; opacity: 1; }
   </style>
 </head>
 <body>
 
   <h1>DAVE-CO <br> CONTROL CENTER</h1>
 
-  <div class="panel-box">
-    <div class="status-panel">
-      <div class="heartbeat"></div>
-      <span>SYSTEM ONLINE // FIREBASE LINK STABLE // PING: <span id="ping-ms">--</span>ms</span>
-    </div>
-  </div>
-
-  <div class="panel-box">
-    <h2>> SPECIAL EVENT FX</h2>
-    <button class="btn-fireworks" onclick="launchFireworks()">LAUNCH FIREWORKS</button>
-  </div>
-
-  <div class="panel-box">
-    <h2>> CROWD CONTROL</h2>
-    <button class="btn-unlock" onclick="unlockVoting()">UNLOCK AUDIENCE PHONES</button>
-  </div>
-
-  <div class="panel-box">
-    <h2>> MANUAL SCORE OVERRIDE</h2>
+  <div class="panel-box" id="connection-panel">
+    <h2>> ESTABLISH SECURE LINK</h2>
     <div class="input-row">
-      <label>LEFT SIDE:</label>
-      <input type="number" id="manualLeft" placeholder="0">
-      <button onclick="setScore('left')">SET</button>
-    </div>
-    <div class="input-row">
-      <label>RIGHT SIDE:</label>
-      <input type="number" id="manualRight" placeholder="0">
-      <button onclick="setScore('right')">SET</button>
+      <input type="text" id="eventIdInput" placeholder="ENTER EVENT UUID..." style="margin-bottom: 0; text-align: left; padding-left: 15px;">
+      <button onclick="manualConnect()" style="flex: 0 0 auto;">CONNECT</button>
     </div>
   </div>
 
-  <div class="panel-box">
-    <h2>> QUICK ADJUST (+/-)</h2>
-    <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size: 1.8rem;">
-      <span>L-SIDE: <strong id="scoreL">0</strong></span>
-      <span>R-SIDE: <strong id="scoreR">0</strong></span>
-    </div>
-    <div class="btn-group">
-      <button onclick="mod('left', -1)">L -1</button>
-      <button onclick="mod('left', 1)">L +1</button>
-      <button onclick="mod('right', -1)">R -1</button>
-      <button onclick="mod('right', 1)">R +1</button>
-    </div>
-  </div>
-
-  <div class="panel-box">
-    <h2>> VISUAL REFERENCES</h2>
-    <div class="input-row">
-      <div style="flex:1; padding-right:10px;">
-        <label>LEFT DISH:</label>
-        <select id="sel_iconLeft" onchange="updateConfig()">
-          <option value="none">None</option>
-          <option value="brick">Brick</option>
-          <option value="house">Small House</option>
-          <option value="hardhat">Hard Hat</option>
-          <option value="clipboard">Clipboard</option>
-          <option value="crane">Crane</option>
-        </select>
-      </div>
-      <div style="flex:1;">
-        <label>RIGHT DISH:</label>
-        <select id="sel_iconRight" onchange="updateConfig()">
-          <option value="none">None</option>
-          <option value="brick">Brick</option>
-          <option value="house">Small House</option>
-          <option value="hardhat">Hard Hat</option>
-          <option value="clipboard">Clipboard</option>
-          <option value="crane">Crane</option>
-        </select>
+  <div id="main-controls">
+    <div class="panel-box">
+      <div class="status-panel">
+        <div class="heartbeat"></div>
+        <span>SESSION: [<span id="event-display-id" style="color:#fff;">--</span>] // PING: <span id="ping-ms">--</span>ms</span>
       </div>
     </div>
-    
-    <div style="margin-top: 20px;">
-      <label>WATERMARK OPACITY <span id="disp_opacity" class="value-readout">15%</span></label>
-      <input type="range" min="0" max="100" id="in_opacity" oninput="updateConfig()">
-    </div>
-    <div style="margin-top: 20px;">
-      <label>GLOBAL SCALE ZOOM <span id="disp_zoom" class="value-readout">100%</span></label>
-      <input type="range" min="50" max="200" step="5" id="in_zoom" oninput="updateConfig()">
-    </div>
-  </div>
 
-  <div class="panel-box">
-    <h2>> PHYSICS PARAMETERS</h2>
-    <div style="margin-bottom: 20px;">
-      <label>SENSITIVITY <span id="disp_sens" class="value-readout">5</span></label>
-      <input type="range" min="1" max="20" id="in_sens" oninput="updateConfig()">
+    <div class="panel-box">
+      <h2>> SPECIAL EVENT FX</h2>
+      <button class="btn-fireworks" onclick="launchFireworks()">LAUNCH FIREWORKS</button>
     </div>
-    <div>
-      <label>MAX TILT ANGLE <span id="disp_tilt" class="value-readout">25</span></label>
-      <input type="range" min="5" max="45" id="in_tilt" oninput="updateConfig()">
-    </div>
-  </div>
 
-  <div class="panel-box">
-    <h2>> BACKGROUND PETALS</h2>
-    <div style="margin-bottom: 20px;">
-      <label>SPAWN RATE (ms) <span id="disp_spawn" class="value-readout">1200</span></label>
-      <input type="range" min="200" max="4000" step="100" id="in_spawn" oninput="updateConfig()">
+    <div class="panel-box">
+      <h2>> CROWD CONTROL</h2>
+      <button class="btn-unlock" onclick="unlockVoting()">UNLOCK AUDIENCE PHONES</button>
     </div>
-    <div>
-      <label>GRAVITY SPEED <span id="disp_fall" class="value-readout">15</span></label>
-      <input type="range" min="5" max="40" id="in_fall" oninput="updateConfig()">
-    </div>
-  </div>
 
-  <div class="panel-box danger-zone">
-    <h2>> DANGER ZONE</h2>
-    <button class="btn-danger" onclick="nukeIt()">INITIATE RESET PROTOCOL</button>
+    <div class="panel-box">
+      <h2>> MANUAL SCORE OVERRIDE</h2>
+      <div class="input-row">
+        <label>LEFT SIDE:</label>
+        <input type="number" id="manualLeft" placeholder="0">
+        <button onclick="setScore('left')">SET</button>
+      </div>
+      <div class="input-row">
+        <label>RIGHT SIDE:</label>
+        <input type="number" id="manualRight" placeholder="0">
+        <button onclick="setScore('right')">SET</button>
+      </div>
+    </div>
+
+    <div class="panel-box">
+      <h2>> QUICK ADJUST (+/-)</h2>
+      <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size: 1.8rem;">
+        <span>L-SIDE: <strong id="scoreL">0</strong></span>
+        <span>R-SIDE: <strong id="scoreR">0</strong></span>
+      </div>
+      <div class="btn-group">
+        <button onclick="mod('left', -1)">L -1</button>
+        <button onclick="mod('left', 1)">L +1</button>
+        <button onclick="mod('right', -1)">R -1</button>
+        <button onclick="mod('right', 1)">R +1</button>
+      </div>
+    </div>
+
+    <div class="panel-box">
+      <h2>> VISUAL REFERENCES</h2>
+      <div class="input-row">
+        <div style="flex:1; padding-right:10px;">
+          <label>LEFT DISH:</label>
+          <select id="sel_iconLeft" onchange="updateConfig()">
+            <option value="none">None</option>
+            <option value="brick">Brick</option>
+            <option value="house">Small House</option>
+            <option value="hardhat">Hard Hat</option>
+            <option value="clipboard">Clipboard</option>
+            <option value="crane">Crane</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label>RIGHT DISH:</label>
+          <select id="sel_iconRight" onchange="updateConfig()">
+            <option value="none">None</option>
+            <option value="brick">Brick</option>
+            <option value="house">Small House</option>
+            <option value="hardhat">Hard Hat</option>
+            <option value="clipboard">Clipboard</option>
+            <option value="crane">Crane</option>
+          </select>
+        </div>
+      </div>
+      
+      <div style="margin-top: 20px;">
+        <label>WATERMARK OPACITY <span id="disp_opacity" class="value-readout">15%</span></label>
+        <input type="range" min="0" max="100" id="in_opacity" oninput="updateConfig()">
+      </div>
+      <div style="margin-top: 20px;">
+        <label>GLOBAL SCALE ZOOM <span id="disp_zoom" class="value-readout">100%</span></label>
+        <input type="range" min="50" max="200" step="5" id="in_zoom" oninput="updateConfig()">
+      </div>
+    </div>
+
+    <div class="panel-box">
+      <h2>> PHYSICS PARAMETERS</h2>
+      <div style="margin-bottom: 20px;">
+        <label>SENSITIVITY <span id="disp_sens" class="value-readout">5</span></label>
+        <input type="range" min="1" max="20" id="in_sens" oninput="updateConfig()">
+      </div>
+      <div>
+        <label>MAX TILT ANGLE <span id="disp_tilt" class="value-readout">25</span></label>
+        <input type="range" min="5" max="45" id="in_tilt" oninput="updateConfig()">
+      </div>
+    </div>
+
+    <div class="panel-box">
+      <h2>> BACKGROUND PETALS</h2>
+      <div style="margin-bottom: 20px;">
+        <label>SPAWN RATE (ms) <span id="disp_spawn" class="value-readout">1200</span></label>
+        <input type="range" min="200" max="4000" step="100" id="in_spawn" oninput="updateConfig()">
+      </div>
+      <div>
+        <label>GRAVITY SPEED <span id="disp_fall" class="value-readout">15</span></label>
+        <input type="range" min="5" max="40" id="in_fall" oninput="updateConfig()">
+      </div>
+    </div>
+
+    <div class="panel-box danger-zone">
+      <h2>> DANGER ZONE</h2>
+      <button class="btn-danger" onclick="nukeIt()">INITIATE RESET PROTOCOL</button>
+    </div>
   </div>
 
   <script type="module">
-    import { db, scaleRef, update, set, increment, onValue } from './firebase-config.js';
+    // IMPORTANT: Make sure 'ref' is exported from your firebase-config.js file
+    import { db, ref, update, set, increment, onValue } from './firebase-config.js';
 
+    let currentEventId = null;
+    let eventRef = null;
     let lastActive = Date.now();
 
-    onValue(scaleRef, (snapshot) => {
-      const now = Date.now();
-      document.getElementById('ping-ms').innerText = now - lastActive > 2000 ? '20' : now - lastActive;
-      lastActive = now;
+    // 1. Check for URL Parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlEvent = urlParams.get('event');
 
-      const data = snapshot.val() || {};
-      const config = data.config || { sensitivity: 5, maxTilt: 25, petalSpawn: 1200, petalFall: 15, iconLeft: 'none', iconRight: 'none', iconOpacity: 15, scaleZoom: 100 };
+    if (urlEvent) {
+      connectToEvent(urlEvent);
+    }
 
-      document.getElementById('in_sens').value = config.sensitivity || 5;
-      document.getElementById('disp_sens').innerText = config.sensitivity || 5;
-      document.getElementById('in_tilt').value = config.maxTilt || 25;
-      document.getElementById('disp_tilt').innerText = config.maxTilt || 25;
-      document.getElementById('in_spawn').value = config.petalSpawn || 1200;
-      document.getElementById('disp_spawn').innerText = config.petalSpawn || 1200;
-      document.getElementById('in_fall').value = config.petalFall || 15;
-      document.getElementById('disp_fall').innerText = config.petalFall || 15;
+    // 2. Manual Connect Trigger
+    window.manualConnect = function() {
+      const inputId = document.getElementById('eventIdInput').value.trim();
+      if (inputId) {
+        // Update URL cleanly without reloading the page
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?event=' + inputId;
+        window.history.pushState({path:newUrl}, '', newUrl);
+        connectToEvent(inputId);
+      }
+    };
+
+    // 3. Establish Database Connection
+    function connectToEvent(id) {
+      currentEventId = id;
+      // Defines the specific database node for this event
+      eventRef = ref(db, 'votes/' + currentEventId); 
       
-      document.getElementById('in_opacity').value = config.iconOpacity ?? 15;
-      document.getElementById('disp_opacity').innerText = (config.iconOpacity ?? 15) + '%';
+      document.getElementById('connection-panel').style.display = 'none';
+      document.getElementById('event-display-id').innerText = currentEventId;
+      document.getElementById('main-controls').classList.add('active');
 
-      // Update Zoom Slider
-      document.getElementById('in_zoom').value = config.scaleZoom ?? 100;
-      document.getElementById('disp_zoom').innerText = (config.scaleZoom ?? 100) + '%';
+      // Bind the listener
+      onValue(eventRef, (snapshot) => {
+        const now = Date.now();
+        document.getElementById('ping-ms').innerText = now - lastActive > 2000 ? '20' : now - lastActive;
+        lastActive = now;
 
-      document.getElementById('sel_iconLeft').value = config.iconLeft || 'none';
-      document.getElementById('sel_iconRight').value = config.iconRight || 'none';
-      document.getElementById('scoreL').innerText = data.left || 0;
-      document.getElementById('scoreR').innerText = data.right || 0;
-    });
+        const data = snapshot.val() || {};
+        const config = data.config || { sensitivity: 5, maxTilt: 25, petalSpawn: 1200, petalFall: 15, iconLeft: 'none', iconRight: 'none', iconOpacity: 15, scaleZoom: 100 };
 
+        document.getElementById('in_sens').value = config.sensitivity || 5;
+        document.getElementById('disp_sens').innerText = config.sensitivity || 5;
+        document.getElementById('in_tilt').value = config.maxTilt || 25;
+        document.getElementById('disp_tilt').innerText = config.maxTilt || 25;
+        document.getElementById('in_spawn').value = config.petalSpawn || 1200;
+        document.getElementById('disp_spawn').innerText = config.petalSpawn || 1200;
+        document.getElementById('in_fall').value = config.petalFall || 15;
+        document.getElementById('disp_fall').innerText = config.petalFall || 15;
+        
+        document.getElementById('in_opacity').value = config.iconOpacity ?? 15;
+        document.getElementById('disp_opacity').innerText = (config.iconOpacity ?? 15) + '%';
+
+        document.getElementById('in_zoom').value = config.scaleZoom ?? 100;
+        document.getElementById('disp_zoom').innerText = (config.scaleZoom ?? 100) + '%';
+
+        document.getElementById('sel_iconLeft').value = config.iconLeft || 'none';
+        document.getElementById('sel_iconRight').value = config.iconRight || 'none';
+        document.getElementById('scoreL').innerText = data.left || 0;
+        document.getElementById('scoreR').innerText = data.right || 0;
+      });
+    }
+
+    // 4. Update the push functions to use the dynamic eventRef
     window.updateConfig = function() {
-      update(scaleRef, {
+      if(!eventRef) return;
+      update(eventRef, {
         "config/sensitivity": parseInt(document.getElementById('in_sens').value),
         "config/maxTilt": parseInt(document.getElementById('in_tilt').value),
         "config/petalSpawn": parseInt(document.getElementById('in_spawn').value),
@@ -209,27 +258,37 @@
         "config/iconLeft": document.getElementById('sel_iconLeft').value,
         "config/iconRight": document.getElementById('sel_iconRight').value,
         "config/iconOpacity": parseInt(document.getElementById('in_opacity').value),
-        "config/scaleZoom": parseInt(document.getElementById('in_zoom').value) // Captures Zoom setting
+        "config/scaleZoom": parseInt(document.getElementById('in_zoom').value)
       });
     }
 
     window.setScore = function(side) {
+      if(!eventRef) return;
       const val = parseInt(document.getElementById(side === 'left' ? 'manualLeft' : 'manualRight').value);
       if (!isNaN(val)) {
-        const updates = {}; updates[side] = val; update(scaleRef, updates);
+        const updates = {}; updates[side] = val; update(eventRef, updates);
       }
     }
 
     window.mod = function(side, val) {
-      const updates = {}; updates[side] = increment(val); update(scaleRef, updates);
+      if(!eventRef) return;
+      const updates = {}; updates[side] = increment(val); update(eventRef, updates);
     }
 
-    window.launchFireworks = function() { update(scaleRef, { "config/fireworks": Date.now() }); }
-    window.unlockVoting = function() { update(scaleRef, { "config/votingRound": Date.now() }); }
+    window.launchFireworks = function() { 
+      if(!eventRef) return;
+      update(eventRef, { "config/fireworks": Date.now() }); 
+    }
+    
+    window.unlockVoting = function() { 
+      if(!eventRef) return;
+      update(eventRef, { "config/votingRound": Date.now() }); 
+    }
 
     window.nukeIt = function() {
-      if(confirm("CONFIRM SYSTEM WIPE?")) {
-        set(scaleRef, { 
+      if(!eventRef) return;
+      if(confirm("CONFIRM SYSTEM WIPE? THIS WILL DELETE ALL SCORES FOR EVENT: " + currentEventId)) {
+        set(eventRef, { 
           left: 0, right: 0,
           config: { sensitivity: 5, maxTilt: 25, petalSpawn: 1200, petalFall: 15, iconLeft: 'none', iconRight: 'none', iconOpacity: 15, scaleZoom: 100, fireworks: 0, votingRound: Date.now() }
         });
