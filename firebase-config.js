@@ -21,4 +21,4 @@ const db = getDatabase(app);
 // This tells the app exactly where to listen
 const scaleRef = ref(db, 'scale_data'); 
 
-export { db, scaleRef, set, onValue, update, increment };
+export { db, ref, update, set, increment, onValue };
