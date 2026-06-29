@@ -1,27 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Dave-Co Control</title>
+  <title>Vote Now</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <style>
     body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: #0b1016; height: 100vh; user-select: none; touch-action: manipulation; }
     
-    /* Wrap the sides in a flex container so we can hide it on error */
     #voting-container { display: none; width: 100%; height: 100%; flex-direction: row; }
     
-    .side { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; transition: filter 0.1s; touch-action: manipulation; }
+    .side { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; transition: filter 0.1s, background-color 0.3s; touch-action: manipulation; }
     .side:active { filter: brightness(1.2); }
-    .side.left { background: radial-gradient(circle at top left, #635496, #1E3668); border-right: 2px solid #000; }
-    .side.right { background: radial-gradient(circle at top right, #4e317a, #1E3668); border-left: 2px solid #000; }
+    
+    /* Default borders and subtle shading */
+    .side.left { border-right: 2px solid #000; background-color: #635496; background-image: linear-gradient(135deg, rgba(0,0,0,0.3), transparent); }
+    .side.right { border-left: 2px solid #000; background-color: #F09222; background-image: linear-gradient(135deg, rgba(0,0,0,0.3), transparent); }
 
-    /* The SVG Icon Box */
     .icon-display { width: 80px; height: 80px; margin-bottom: 20px; fill: rgba(255,255,255,0.8); pointer-events: none; }
-
     h2 { margin: 0 0 20px 0; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.5); pointer-events: none; text-align: center; padding: 0 10px; }
     .count { font-size: 8rem; font-weight: 800; color: white; margin: 0; line-height: 1; pointer-events: none; }
     .hit-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; cursor: pointer; }
 
-    /* Failsafe Error Screen */
     #error-screen {
         display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         background: #0b1016; z-index: 10000; color: #ff3333; flex-direction: column;
@@ -29,6 +27,11 @@
     }
     #error-screen h1 { font-size: 2rem; margin-bottom: 10px; text-shadow: 0 0 15px #ff3333; }
     #error-screen p { font-size: 1.2rem; color: #fff; padding: 0 20px; }
+    
+    .pixel-watermark { position: absolute; bottom: 15px; left: 0; width: 100%; z-index: 9999; pointer-events: none; display: none; align-items: center; justify-content: center; opacity: 0.6; }
+    .pixel-watermark.show-watermark { display: flex; }
+    .pixel-watermark-text { font-family: 'Segoe UI', sans-serif; font-size: 1rem; font-weight: 400; color: rgba(255, 255, 255, 0.6); letter-spacing: 0.05em; text-transform: uppercase; text-shadow: 0px 2px 4px rgba(0,0,0,0.8); }
+    .pixel-watermark-text strong { font-weight: 800; color: #d97a39; }
   </style>
 </head>
 <body>
@@ -38,15 +41,19 @@
     <p>Please scan the QR code on the main screen again.</p>
   </div>
 
+  <div id="freemium-watermark" class="pixel-watermark">
+      <div class="pixel-watermark-text">Powered by <strong>Pixel Array</strong></div>
+  </div>
+
   <div id="voting-container">
-    <div class="side left">
+    <div class="side left" id="bgLeft">
       <div class="hit-area" onclick="vote('left')"></div>
       <div class="icon-display" id="ctrlIconLeft"></div>
       <h2 id="labelLeft">Safety, Respect & Culture</h2>
       <div class="count" id="leftDisplay">...</div>
     </div>
 
-    <div class="side right">
+    <div class="side right" id="bgRight">
       <div class="hit-area" onclick="vote('right')"></div>
       <div class="icon-display" id="ctrlIconRight"></div>
       <h2 id="labelRight">Leadership, Progression & Power</h2>
@@ -57,10 +64,10 @@
   <script type="module">
     import { db, ref, update, increment, onValue } from './firebase-config.js';
 
-    // 1. URL Parameter Extraction
     const urlParams = new URLSearchParams(window.location.search);
     const eventId = urlParams.get('event');
     let eventRef = null;
+    const watermark = document.getElementById('freemium-watermark');
 
     const iconLibrary = {
       none: '',
@@ -71,7 +78,6 @@
       crane: `<svg viewBox="0 0 100 100"><rect x="20" y="10" width="12" height="90"/><polygon points="10,10 90,10 80,25 32,25"/><line x1="75" y1="25" x2="75" y2="60" stroke="rgba(255,255,255,0.8)" stroke-width="3"/><path d="M75 60 v10 a 8 8 0 0 0 16 0" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="4"/></svg>`
     };
 
-    // 2. Failsafe Routing
     if (!eventId) {
       document.getElementById('error-screen').style.display = 'flex';
     } else {
@@ -80,22 +86,30 @@
 
       onValue(eventRef, (snapshot) => {
         const data = snapshot.val() || {};
+        
+        if (data.status === 'free') {
+          watermark.classList.add('show-watermark');
+        } else {
+          watermark.classList.remove('show-watermark');
+        }
+
         document.getElementById("leftDisplay").textContent = data.left || 0;
         document.getElementById("rightDisplay").textContent = data.right || 0;
         
         const config = data.config || {};
         
-        // Sync Icons
         document.getElementById('ctrlIconLeft').innerHTML = iconLibrary[config.iconLeft || 'none'];
         document.getElementById('ctrlIconRight').innerHTML = iconLibrary[config.iconRight || 'none'];
 
-        // Sync Dynamic Text Labels
         document.getElementById('labelLeft').textContent = config.labelLeft || 'Safety, Respect & Culture';
         document.getElementById('labelRight').textContent = config.labelRight || 'Leadership, Progression & Power';
+
+        // APPLY DYNAMIC COLORS
+        if (config.colorLeft) document.getElementById('bgLeft').style.backgroundColor = config.colorLeft;
+        if (config.colorRight) document.getElementById('bgRight').style.backgroundColor = config.colorRight;
       });
     }
 
-    // 3. Cast Vote (Rapid Fire)
     window.vote = function(side) {
       if (!eventRef) return;
       const updates = {};
