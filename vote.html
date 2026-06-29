@@ -18,37 +18,66 @@
     .btn-left { background: #1E3668; }
     .btn-right { background: #F09222; }
 
-    .status { margin-top: 20px; color: #666; font-size: 0.9rem; }
+    .status { margin-top: 20px; color: #666; font-size: 1.1rem; font-weight: bold; }
+    
+    /* UI states based on URL validation */
+    #errorMsg { color: #d9534f; font-weight: bold; font-size: 1.2rem; margin-top: 40px; display: none; }
+    #voting-container { display: none; } 
   </style>
 </head>
 <body>
 
   <h1>Cast Your Vote</h1>
 
-  <button class="btn btn-left" id="btnLeft" onclick="castVote('left')">Vote Option 1</button>
-  <button class="btn btn-right" id="btnRight" onclick="castVote('right')">Vote Option 2</button>
+  <div id="errorMsg">⚠️ Invalid Event Link.<br><br>Please scan the QR code on the main screen again.</div>
 
-  <div class="status" id="statusMsg">Tap a button to vote!</div>
+  <div id="voting-container">
+    <button class="btn btn-left" id="btnLeft" onclick="castVote('left')">Vote Option 1</button>
+    <button class="btn btn-right" id="btnRight" onclick="castVote('right')">Vote Option 2</button>
+    <div class="status" id="statusMsg">Tap a button to vote!</div>
+  </div>
 
   <script type="module">
-    import { db, scaleRef, update, increment } from './firebase-config.js';
+    // IMPORTANT: Make sure 'ref' is exported from your firebase-config.js file
+    import { db, ref, update, increment } from './firebase-config.js';
 
+    // 1. Extract Event ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const eventId = urlParams.get('event');
+    
+    let eventRef = null;
+
+    // 2. Validate URL and display correct UI
+    if (!eventId) {
+      document.getElementById('errorMsg').style.display = 'block';
+    } else {
+      document.getElementById('voting-container').style.display = 'block';
+      eventRef = ref(db, 'votes/' + eventId);
+    }
+
+    // 3. Cast Vote Logic
     window.castVote = function(side) {
+      if (!eventRef) return; // Hard failsafe against broken links
+
       const btnL = document.getElementById('btnLeft');
       const btnR = document.getElementById('btnRight');
       const msg = document.getElementById('statusMsg');
 
-      // 1. Send +1 to the cloud (using atomic increment to prevent glitches)
+      // Send +1 to the cloud (using atomic increment to prevent glitches)
       const updates = {};
       updates[side] = increment(1);
-      update(scaleRef, updates);
-
-      // 2. Feedback for user
-      msg.textContent = "Vote Sent!";
       
-      // 3. Cooldown (prevent spam)
+      update(eventRef, updates).then(() => {
+         msg.textContent = "Vote Sent!";
+      }).catch((error) => {
+         msg.textContent = "Error connecting to server.";
+         console.error(error);
+      });
+      
+      // Cooldown (prevent spam)
       btnL.disabled = true;
       btnR.disabled = true;
+      
       setTimeout(() => {
         btnL.disabled = false;
         btnR.disabled = false;
