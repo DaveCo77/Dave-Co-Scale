@@ -120,6 +120,7 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const eventId = urlParams.get('event');
+    const tier = urlParams.get('tier') || 'free';
     const errorScreen = document.getElementById('error-screen');
 
     const beam = document.getElementById('beamGroup');
@@ -146,17 +147,18 @@
     if (!eventId) {
       errorScreen.style.display = 'flex';
     } else {
+      // URL-Based Watermark Logic
+      if (tier !== 'pro') {
+          watermark.classList.add('show-watermark');
+      } else {
+          watermark.classList.remove('show-watermark');
+      }
+
       const eventRef = ref(db, 'votes/' + eventId);
 
       onValue(eventRef, (snapshot) => {
         const data = snapshot.val() || {};
         
-        if (data.status === 'free') {
-          watermark.classList.add('show-watermark');
-        } else {
-          watermark.classList.remove('show-watermark');
-        }
-
         if (data.config) {
           currentConfig = data.config;
           
