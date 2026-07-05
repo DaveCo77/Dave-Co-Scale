@@ -54,7 +54,7 @@
       document.getElementById('voting-container').style.display = 'block';
       eventRef = ref(db, 'votes/' + eventId);
 
-      // 3. NEW: Listen for Custom Labels from the Admin Panel
+      // 3. Listen for Custom Labels from the Admin Panel
       onValue(eventRef, (snapshot) => {
         const data = snapshot.val() || {};
         if (data.config) {
