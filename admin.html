@@ -15,6 +15,9 @@
     h2 { margin-top: 0; font-size: 1.5rem; text-shadow: 0 0 5px var(--term-color); }
     
     .status-panel { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; color: var(--system-ok); font-size: 1.2rem; text-shadow: 0 0 5px var(--system-ok); }
+    .tier-badge { font-weight: bold; padding: 2px 8px; border: 1px solid; border-radius: 4px; font-size: 1rem; }
+    .tier-free { color: #ff3333; border-color: #ff3333; box-shadow: 0 0 5px rgba(255,51,51,0.5); }
+    .tier-pro { color: var(--system-ok); border-color: var(--system-ok); box-shadow: 0 0 5px rgba(0,255,65,0.5); }
     .heartbeat { width: 12px; height: 12px; border-radius: 50%; background: var(--system-ok); box-shadow: 0 0 10px var(--system-ok); animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
 
@@ -38,8 +41,8 @@
     
     .btn-fireworks { background: var(--term-color); color: #000; text-shadow: none; box-shadow: 0 0 15px var(--term-color); font-weight: bold; font-size: 1.8rem; }
     .btn-fireworks:hover { background: #fff; color: #000; box-shadow: 0 0 25px #fff; border-color: #fff; }
-    .btn-unlock { background: #80a2df; color: #000; border-color: #80a2df; text-shadow: none; box-shadow: 0 0 15px rgba(128, 162, 223, 0.5); }
-    .btn-unlock:hover { background: #fff; border-color: #fff; box-shadow: 0 0 25px #fff; }
+    .btn-link { border-color: #80a2df; color: #80a2df; text-shadow: 0 0 5px #80a2df; box-shadow: 0 0 5px rgba(128, 162, 223, 0.3); }
+    .btn-link:hover { background: #80a2df; color: #000; box-shadow: 0 0 15px #80a2df; text-shadow: none; }
     
     .input-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
     #main-controls { display: none; opacity: 0; transition: opacity 0.5s ease-in-out; }
@@ -63,6 +66,16 @@
       <div class="status-panel">
         <div class="heartbeat"></div>
         <span>SESSION: [<span id="event-display-id" style="color:#fff;">--</span>] // PING: <span id="ping-ms">--</span>ms</span>
+        <span id="tier-badge" class="tier-badge"></span>
+      </div>
+    </div>
+
+    <!-- NEW LINK GENERATOR PANEL -->
+    <div class="panel-box">
+      <h2>> EVENT LINKS</h2>
+      <div class="btn-group">
+        <button class="btn-link" onclick="copyLink('view')">COPY DISPLAY LINK</button>
+        <button class="btn-link" onclick="copyLink('voting')">COPY VOTING LINK</button>
       </div>
     </div>
 
@@ -186,15 +199,40 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const urlEvent = urlParams.get('event');
+    const tier = urlParams.get('tier') || 'free';
+    
+    // Set UI Tier Badge
+    const badge = document.getElementById('tier-badge');
+    if(tier === 'pro') {
+        badge.textContent = "PRO TIER";
+        badge.className = "tier-badge tier-pro";
+    } else {
+        badge.textContent = "FREE TIER";
+        badge.className = "tier-badge tier-free";
+    }
+
     if (urlEvent) { connectToEvent(urlEvent); }
 
     window.manualConnect = function() {
       const inputId = document.getElementById('eventIdInput').value.trim();
       if (inputId) {
-        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?event=' + inputId;
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?event=' + inputId + '&tier=' + tier;
         window.history.pushState({path:newUrl}, '', newUrl);
         connectToEvent(inputId);
       }
+    };
+
+    window.copyLink = function(type) {
+      const targetFile = type === 'view' ? 'view.html' : 'voting.html';
+      const url = new URL(targetFile, window.location.href);
+      url.searchParams.set('event', currentEventId);
+      url.searchParams.set('tier', tier); // Pass the tier so view.html knows if it should show the watermark
+      
+      navigator.clipboard.writeText(url.href).then(() => {
+          alert(`Copied ${type.toUpperCase()} link straight to clipboard!\n\nLink: ${url.href}`);
+      }).catch(err => {
+          console.error('Could not copy string: ', err);
+      });
     };
 
     function connectToEvent(id) {
@@ -226,7 +264,6 @@
         document.getElementById('sel_iconLeft').value = config.iconLeft || 'none';
         document.getElementById('sel_iconRight').value = config.iconRight || 'none';
 
-        // Load colors (preventing overwrite if you are currently typing/selecting)
         if (document.activeElement !== document.getElementById('in_colorLeft')) {
             document.getElementById('in_colorLeft').value = config.colorLeft || '#635496';
         }
@@ -275,7 +312,6 @@
 
     window.launchFireworks = function() { if(!eventRef) return; update(eventRef, { "config/fireworks": Date.now() }); }
 
-    // FIXED NUKE BUTTON: Only resets scores to 0, preserves your status and design config
     window.nukeIt = function() {
       if(!eventRef) return;
       if(confirm("CONFIRM SYSTEM WIPE? THIS WILL RESET SCORES TO ZERO FOR EVENT: " + currentEventId)) {
