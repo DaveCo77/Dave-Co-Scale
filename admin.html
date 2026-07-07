@@ -190,33 +190,26 @@
     </div>
   </div>
 
-  <script type="module">
+ <script type="module">
     import { db, ref, update, set, increment, onValue } from './firebase-config.js';
 
     let currentEventId = null;
     let eventRef = null;
     let lastActive = Date.now();
+    let dbTier = 'free'; // Default to free until DB confirms
 
     const urlParams = new URLSearchParams(window.location.search);
     const urlEvent = urlParams.get('event');
-    const tier = urlParams.get('tier') || 'free';
     
-    // Set UI Tier Badge
+    // UI elements
     const badge = document.getElementById('tier-badge');
-    if(tier === 'pro') {
-        badge.textContent = "PRO TIER";
-        badge.className = "tier-badge tier-pro";
-    } else {
-        badge.textContent = "FREE TIER";
-        badge.className = "tier-badge tier-free";
-    }
 
     if (urlEvent) { connectToEvent(urlEvent); }
 
     window.manualConnect = function() {
       const inputId = document.getElementById('eventIdInput').value.trim();
       if (inputId) {
-        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?event=' + inputId + '&tier=' + tier;
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?event=' + inputId;
         window.history.pushState({path:newUrl}, '', newUrl);
         connectToEvent(inputId);
       }
@@ -226,7 +219,9 @@
       const targetFile = type === 'view' ? 'view.html' : 'voting.html';
       const url = new URL(targetFile, window.location.href);
       url.searchParams.set('event', currentEventId);
-      url.searchParams.set('tier', tier); // Pass the tier so view.html knows if it should show the watermark
+      
+      // We now pass the tier based on what the DATABASE told us, not the URL.
+      url.searchParams.set('tier', dbTier); 
       
       navigator.clipboard.writeText(url.href).then(() => {
           alert(`Copied ${type.toUpperCase()} link straight to clipboard!\n\nLink: ${url.href}`);
@@ -249,6 +244,20 @@
         lastActive = now;
 
         const data = snapshot.val() || {};
+        
+        // --- NEW TIER LOGIC ---
+        // Read the status directly from Firebase
+        dbTier = data.status === 'pro' ? 'pro' : 'free';
+        
+        if(dbTier === 'pro') {
+            badge.textContent = "PRO TIER";
+            badge.className = "tier-badge tier-pro";
+        } else {
+            badge.textContent = "FREE TIER";
+            badge.className = "tier-badge tier-free";
+        }
+        // ----------------------
+
         const config = data.config || { sensitivity: 5, maxTilt: 25, iconOpacity: 15, scaleZoom: 100 };
 
         document.getElementById('in_sens').value = config.sensitivity || 5;
