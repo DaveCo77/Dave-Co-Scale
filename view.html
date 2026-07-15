@@ -54,7 +54,7 @@
     <p>Please load this display using a valid event URL:<br><br><strong>view.html?event=YOUR_EVENT_ID</strong></p>
   </div>
 
-  <div id="freemium-watermark" class="pixel-watermark">
+  <div id="freemium-watermark" class="pixel-watermark show-watermark">
       <div class="pixel-watermark-text">Powered by <strong>Pixel Array</strong></div>
   </div>
 
@@ -120,7 +120,6 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const eventId = urlParams.get('event');
-    const tier = urlParams.get('tier') || 'free';
     const errorScreen = document.getElementById('error-screen');
 
     const beam = document.getElementById('beamGroup');
@@ -147,18 +146,19 @@
     if (!eventId) {
       errorScreen.style.display = 'flex';
     } else {
-      // URL-Based Watermark Logic
-      if (tier !== 'pro') {
-          watermark.classList.add('show-watermark');
-      } else {
-          watermark.classList.remove('show-watermark');
-      }
-
       const eventRef = ref(db, 'votes/' + eventId);
 
       onValue(eventRef, (snapshot) => {
         const data = snapshot.val() || {};
         
+        // WATERMARK LIVE TOGGLE
+        // Checks the database status directly instead of relying on the URL parameters
+        if (data.status === 'pro' || data.status === 'paid') {
+            watermark.classList.remove('show-watermark');
+        } else {
+            watermark.classList.add('show-watermark');
+        }
+
         if (data.config) {
           currentConfig = data.config;
           
